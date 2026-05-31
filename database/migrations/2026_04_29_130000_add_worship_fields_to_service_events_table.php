@@ -59,11 +59,26 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('service_events', function (Blueprint $table) {
-            $table->dropColumn([
-                'service_name', 'preacher', 'preacher_description', 'message',
-                'attendance_children', 'attendance_women', 'attendance_men',
-                'total_attendance', 'total_offerings', 'leaders_on_duty',
-            ]);
+
+            $columns = [
+                'service_name',
+                'preacher',
+                'preacher_description',
+                'message',
+                'attendance_children',
+                'attendance_women',
+                'attendance_men',
+                'total_attendance',
+                'total_offerings',
+                'leaders_on_duty',
+            ];
+
+            foreach ($columns as $column) {
+                if (Schema::hasColumn('service_events', $column)) {
+                    $table->dropColumn($column);
+                }
+            }
+
         });
     }
 };
