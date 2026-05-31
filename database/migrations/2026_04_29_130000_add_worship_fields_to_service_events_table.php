@@ -10,17 +10,49 @@ return new class extends Migration
     {
         Schema::table('service_events', function (Blueprint $table) {
             // Make original title nullable since frontend uses service_name instead
-            $table->string('title')->nullable()->change();
-            $table->string('service_name')->nullable()->after('title');
-            $table->string('preacher')->nullable()->after('description');
-            $table->string('preacher_description')->nullable()->after('preacher');
-            $table->text('message')->nullable()->after('preacher_description');
-            $table->unsignedInteger('attendance_children')->default(0)->after('message');
-            $table->unsignedInteger('attendance_women')->default(0)->after('attendance_children');
-            $table->unsignedInteger('attendance_men')->default(0)->after('attendance_women');
-            $table->unsignedInteger('total_attendance')->default(0)->after('attendance_men');
-            $table->decimal('total_offerings', 12, 2)->default(0)->after('total_attendance');
-            $table->string('leaders_on_duty')->nullable()->after('total_offerings');
+            if (Schema::hasColumn('service_events', 'title')) {
+                $table->string('title')->nullable()->change();
+            }
+
+            if (!Schema::hasColumn('service_events', 'service_name')) {
+                $table->string('service_name')->nullable()->after('title');
+            }
+
+            if (!Schema::hasColumn('service_events', 'preacher')) {
+                $table->string('preacher')->nullable()->after('description');
+            }
+
+            if (!Schema::hasColumn('service_events', 'preacher_description')) {
+                $table->string('preacher_description')->nullable()->after('preacher');
+            }
+
+            if (!Schema::hasColumn('service_events', 'message')) {
+                $table->text('message')->nullable()->after('preacher_description');
+            }
+
+            if (!Schema::hasColumn('service_events', 'attendance_children')) {
+                $table->unsignedInteger('attendance_children')->default(0)->after('message');
+            }
+
+            if (!Schema::hasColumn('service_events', 'attendance_women')) {
+                $table->unsignedInteger('attendance_women')->default(0)->after('attendance_children');
+            }
+
+            if (!Schema::hasColumn('service_events', 'attendance_men')) {
+                $table->unsignedInteger('attendance_men')->default(0)->after('attendance_women');
+            }
+
+            if (!Schema::hasColumn('service_events', 'total_attendance')) {
+                $table->unsignedInteger('total_attendance')->default(0)->after('attendance_men');
+            }
+
+            if (!Schema::hasColumn('service_events', 'total_offerings')) {
+                $table->decimal('total_offerings', 12, 2)->default(0)->after('total_attendance');
+            }
+
+            if (!Schema::hasColumn('service_events', 'leaders_on_duty')) {
+                $table->string('leaders_on_duty')->nullable()->after('total_offerings');
+            }
         });
     }
 

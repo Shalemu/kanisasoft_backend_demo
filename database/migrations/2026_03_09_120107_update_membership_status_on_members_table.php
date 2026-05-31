@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -11,6 +12,14 @@ return new class extends Migration
      */
    public function up(): void
 {
+    Schema::table('members', function (Blueprint $table) {
+        $table->string('membership_status')->change();
+    });
+
+    DB::table('members')
+        ->whereNotIn('membership_status', ['pending', 'active', 'rejected'])
+        ->update(['membership_status' => 'pending']);
+
     Schema::table('members', function (Blueprint $table) {
         // Change membership_status to enum: pending, active, rejected
         $table->enum('membership_status', ['pending', 'active', 'rejected'])
