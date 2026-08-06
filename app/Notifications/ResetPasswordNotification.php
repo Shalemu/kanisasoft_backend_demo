@@ -9,7 +9,7 @@ class ResetPasswordNotification extends BaseResetPassword
 {
    public function toMail($notifiable)
 {
-    $frontendUrl = env('FRONTEND_URL', 'https://fpctkurasini.kanisasoft.co.tz'); 
+    $frontendUrl = env('FRONTEND_URL', 'https://demo.kanisasoft.co.tz'); 
     // $frontendUrl = env('FRONTEND_URL', ' http://localhost:3000'); 
 
     return (new MailMessage)
