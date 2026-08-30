@@ -357,18 +357,36 @@ class SMSController extends Controller
         return is_string($phone) && preg_match('/^255[0-9]{9}$/', $phone) === 1;
     }
 
-    private function logSmsAttempt(string $recipient, string $receiver, string $type, string $message, string $status, array $response = []): void
-    {
-        SmsLog::create([
-            'recipient' => $recipient,
-            'receiver' => $receiver,
-            'type' => $type,
-            'message' => $message,
-            'status' => $status,
-            'response' => $response,
-        ]);
+
+   private function logSmsAttempt(
+    string $recipient,
+    string $receiver,
+    string $type,
+    string $message,
+    string $status,
+    array $response = []
+): void {
+    SmsLog::create([
+        'recipient' => $recipient,
+        'receiver' => $receiver,
+        'type' => $type,
+        'message' => $message,
+        'sms_count' => $this->calculateSmsCount($message),
+        'status' => $status,
+        'response' => $response,
+    ]);
+}
+
+   private function calculateSmsCount(string $message): int
+{
+    $length = mb_strlen($message);
+
+    if ($length === 0) {
+        return 0;
     }
 
+    return (int) ceil($length / 160);
+}
     public function logs()
     {
        $logs = SmsLog::latest()->get()->map(function ($log) {

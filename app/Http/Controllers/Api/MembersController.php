@@ -1056,38 +1056,27 @@ class MembersController extends Controller
     /**
      * Deactivate member
      */
-    public function deactivate(Request $request, Member $member)
-    {
-        $reasons = [
-            'Amehama' => 'left',
-            'Ametegwa ushirika' => 'detained',
-            'Amefariki' => 'deceased',
-            'Amepotea' => 'lost',
-            'Amepoteza ushirika' => 'lost',
-            'Amejisajiri kimakosa' => 'deactivated',
-        ];
+     public function deactivate(Request $request, Member $member)
+        {
+            $request->validate([
+                'reason' => ['nullable', 'string', 'max:255'],
+            ]);
 
-        $request->validate([
-            'reason' => ['nullable', 'string', 'max:255'],
-        ]);
+            $reason = $request->input('reason', 'Deactivated by admin');
 
-        $reason = $request->input('reason', 'Deactivated by admin');
-        $status = $reasons[$reason] ?? 'deactivated';
+            $member->update([
+                'membership_status' => 'deactivated',
+                'deactivation_reason' => $reason,
+                'is_authorized' => false,
+            ]);
 
-        $member->update([
-            'membership_status' => $status,
-            'deactivation_reason' => $reason,
-            'is_authorized' => false,
-            'membership_number' => null,
-        ]);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Member deactivated successfully.',
-            'member' => $member->fresh()->load('user'),
-            'membership_status' => $status,
-        ]);
-    }
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Member deactivated successfully.',
+                'member' => $member->fresh()->load('user'),
+                'membership_status' => 'deactivated',
+            ]);
+        }
 
     public function deactivateUser(Request $request, User $user)
     {
@@ -1205,51 +1194,52 @@ class MembersController extends Controller
      * Delete member and user
      */
     public function deleteBoth(int $id)
-    {
-        $member = Member::find($id);
+        {
+            $member = Member::find($id);
 
-        if (! $member) {
-            return response()->json(['status' => 'error', 'message' => 'Member not found'], 404);
-        }
-
-        try {
-            $user = $member->user;
-
-            DeletedMember::create([
-                'user_id' => $user?->id,
-                'full_name' => $member->full_name,
-                'email' => $member->email,
-                'phone' => $member->phone_number,
-                'gender' => $member->gender,
-                'birth_date' => $member->birth_date,
-                'reason' => 'deleted manually',
-                'deleted_by' => auth()->user()->full_name ?? 'system',
-                'deleted_at' => now(),
-            ]);
-
-            $member->update([
-                'membership_status' => 'deactivated',
-                'deactivation_reason' => 'deleted manually',
-                'is_authorized' => false,
-                'membership_number' => null,
-            ]);
-
-            if ($user) {
-                $user->update(['role' => null]);
+            if (! $member) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Member not found',
+                ], 404);
             }
 
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Member deactivated successfully',
-                'member' => $member->fresh()->load('user'),
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Error deleting user and member: '.$e->getMessage(),
-            ], 500);
+            try {
+                $user = $member->user;
+
+                // Move member to trash
+                DeletedMember::create([
+                    'user_id' => $user?->id,
+                    'full_name' => $member->full_name,
+                    'email' => $member->email,
+                    'phone' => $member->phone_number,
+                    'gender' => $member->gender,
+                    'birth_date' => $member->birth_date,
+                    'reason' => 'deleted manually',
+                    'deleted_by' => auth()->user()->full_name ?? 'system',
+                    'deleted_at' => now(),
+                ]);
+
+                // Remove from normal member records
+                $member->delete();
+
+                // Remove user from normal user records
+                if ($user) {
+                    $user->delete();
+                }
+
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Member moved to trash successfully.',
+                ]);
+
+            } catch (\Throwable $e) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $e->getMessage(),
+                ], 500);
+            }
         }
-    }
 
     /**
      * Assign leadership role
