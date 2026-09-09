@@ -10,6 +10,7 @@ use App\Models\Guest;
 use App\Models\Group;
 use App\Models\LeadershipRole;
 use App\Models\Member;
+use App\Models\SmsLog;
 use App\Models\User;
 use App\Services\SMSService;
 use Illuminate\Http\Request;
@@ -1056,7 +1057,7 @@ class MembersController extends Controller
     /**
      * Deactivate member
      */
-     public function deactivate(Request $request, Member $member)
+            public function deactivate(Request $request, Member $member)
         {
             $request->validate([
                 'reason' => ['nullable', 'string', 'max:255'],
@@ -1064,7 +1065,7 @@ class MembersController extends Controller
 
             $reason = $request->input('reason', 'Deactivated by admin');
 
-            $member->update([
+          $member->update([
                 'membership_status' => 'deactivated',
                 'deactivation_reason' => $reason,
                 'is_authorized' => false,
@@ -1092,6 +1093,7 @@ class MembersController extends Controller
         return $this->deactivate($request, $member);
     }
 
+    
     public function stats()
     {
         $guestCount = Guest::count();
@@ -1193,7 +1195,7 @@ class MembersController extends Controller
     /**
      * Delete member and user
      */
-    public function deleteBoth(int $id)
+     public function deleteBoth(int $id)
         {
             $member = Member::find($id);
 
@@ -1240,7 +1242,6 @@ class MembersController extends Controller
                 ], 500);
             }
         }
-
     /**
      * Assign leadership role
      */
@@ -1372,7 +1373,17 @@ class MembersController extends Controller
                 $text = "Habari {$fullName}, usajili wako   umekamilika. "
                       ."Namba yako ya ushirika ni: {$membershipNumber}. Karibu  KanisaSoft.";
 
-                app(SMSService::class)->sendSMS($member->phone_number, $text);
+                $result = app(SMSService::class)->sendSMS($member->phone_number, $text);
+
+                SmsLog::create([
+                    'recipient' => $member->phone_number,
+                    'receiver' => $fullName,
+                    'type' => 'authorization',
+                    'message' => $text,
+                    'sms_count' => (int) ceil(mb_strlen($text) / 160),
+                    'status' => $result['status'] ? 'Sent' : 'Failed',
+                    'response' => $result,
+                ]);
             } catch (\Throwable $e) {
                 Log::error('SMS sending failed: '.$e->getMessage());
             }
